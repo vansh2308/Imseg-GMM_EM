@@ -10,12 +10,17 @@ import itertools
 from itertools import chain
 import matplotlib.cm as cm 
 from utils import *
+import argparse
 
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Image segmentation using GMM-EM')
+    parser.add_argument('filename')
+    args = parser.parse_args()
+
     #LoadImage
-    img_src = cv2.imread('input/15.jpg')
+    img_src = cv2.imread(args.filename)
     w, h, d = original_shape = tuple(img_src.shape)
     assert d == 3
 
@@ -32,7 +37,7 @@ if __name__ == "__main__":
     seg2=segmented(img_src,samples, lab2,7, w, h)
 
     
-    img_src = mpimg.imread('input/15.jpg') 
+    img_src = mpimg.imread(args.filename) 
 
 
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 10))
@@ -44,5 +49,5 @@ if __name__ == "__main__":
     axs[1].set_xticks([])
     axs[1].set_yticks([])
 
-    plt.imsave('output/15.png', seg1)
+    plt.imsave('output/16.png', seg1)
 
