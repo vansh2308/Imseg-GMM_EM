@@ -10,7 +10,10 @@ Gaussian Filter is applied on the image and projected to the CIELAB space. Local
 
 The approach models the image data distribution as a Gaussian Mixture Model. By randomly sampling 1000 data points (pixels from the image) over 1000 iterations, we could estimate the parameters (means/labels, covariances and joint membership weights of a point belonging to each cluster) by repeated adjustments with Expectation Maximization Agorithm to derive optimal cluster and labels.
 
-ToDos:
+The approach is found to acheive a <b>jaccard similarity coefficienty of upto 0.917 </b>
+
+
+#### ToDos
 - [ ] Hyperparamter Tuning
 - [ ] Plotting the Gaussian Mixture distribution
 
