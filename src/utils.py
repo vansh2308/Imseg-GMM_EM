@@ -6,6 +6,7 @@ from skimage import feature
 from sklearn import mixture
 from sklearn import preprocessing
 from sklearn.utils import shuffle
+from itertools import chain
 
 
 color_iter = itertools.cycle(['navy', 'red', 'cornflowerblue', 'gold', 'darkorange','b','cyan'])
@@ -69,6 +70,23 @@ def train(num_patches, image, n_samples, w, h):
 def test(im_test, gmm):
     labels = gmm.predict(im_test)
     return labels
+
+
+def segment(image, samples, label, num_comp, w, h):
+    label = np.expand_dims(label, axis=0)
+    label = np.transpose(label)
+
+    for i in range(1, num_comp):
+        indices = np.where(np.all(label == i, axis=-1))
+        indices = np.unravel_index(indices, (w, h), order='C')
+        indices = np.transpose(indices)
+
+        l =  chain.from_iterable(zip(*indices))
+
+        for j, (lowercase, uppercase) in enumerate(l):
+            image[lowercase, uppercase] = _color_codes[(i)]
+
+    return image
 
 
 if __name__ == "__main__":
