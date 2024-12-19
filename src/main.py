@@ -21,8 +21,12 @@ if __name__ == "__main__":
 
     samples, imtest = utils.create_data(img_src, n_samples)
 
-    gmm, dpgmm=train(num_patches, samples ,n_samples,w,h)
-#prepimage(imtest, num_patches)
+    gmm = utils.train(num_patches, samples, n_samples, w, h)
+
+    labels= utils.test(imtest, gmm)
+
+    print(type(labels))
+
 
     
     pass
