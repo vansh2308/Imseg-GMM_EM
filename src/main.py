@@ -1,3 +1,4 @@
+import matplotlib.image as mpimg
 import cv2
 import numpy as np 
 import matplotlib.pyplot as plt 
@@ -8,28 +9,40 @@ from matplotlib import colors as mcolors
 import itertools
 from itertools import chain
 import matplotlib.cm as cm 
-import utils
+from utils import *
+
 
 
 if __name__ == "__main__":
-    img_src = cv2.imread("../input/10.jpg")
+    #LoadImage
+    img_src = cv2.imread('input/14.jpg')
     w, h, d = original_shape = tuple(img_src.shape)
     assert d == 3
 
-    n_samples, num_patches = w*h, 100
-    # print(w, h, d, n_samples, num_patches)
-
-    samples, imtest = utils.create_data(img_src, n_samples)
-
-    gmm = utils.train(num_patches, samples, n_samples, w, h)
-
-    labels= utils.test(imtest, gmm)
-
-    seg = utils.segment(img_src,samples, labels, 7, w, h)
+    # Number of samples per component
+    n_samples = w*h
+    #Number of sets of training samples
+    num_patches=100;
 
 
-    plt.imshow(seg)
-    plt.show()
-    cv2.imwrite('output.png', seg)
-    cv2.destroyAllWindows()
+    samples, imtest=createData(img_src, n_samples)
+    gmm, dpgmm=train(num_patches, samples ,n_samples,w,h)
+    lab1,lab2=test(samples, gmm, dpgmm)
+    seg1=segmented(img_src,samples,lab1, 7, w, h)
+    seg2=segmented(img_src,samples, lab2,7, w, h)
+
+    
+    img_src = mpimg.imread('input/14.jpg') 
+
+
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 10))
+    axs[0].imshow(img_src)
+    axs[0].set_xticks([])
+    axs[0].set_yticks([])
+
+    axs[1].imshow(seg1)
+    axs[1].set_xticks([])
+    axs[1].set_yticks([])
+
+    plt.imsave('output/14.png', seg1)
 

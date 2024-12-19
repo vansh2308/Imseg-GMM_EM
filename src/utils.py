@@ -1,15 +1,33 @@
-import numpy as np
 import cv2
-import itertools
-import time
-from skimage import feature
+import numpy as np
+import math
 from sklearn import mixture
+from scipy import linalg
+import itertools
+import matplotlib.pyplot as plt
+from scipy import linalg
+import matplotlib as mpl
+from time import time
+# from scipy import infty
 from sklearn import preprocessing
 from sklearn.utils import shuffle
+# from matplotlib import colors as mcolors
+# from scipy.misc import imfilter, imread
+# from skimage import color, data, restoration
+# from scipy.signal import convolve2d as conv2
+# import matplotlib.cm as cm
 from itertools import chain
+from skimage import feature
 
+#-----Define Helper Functionas------#
+
+#---------Loads Each Image and Runs GMM Fit---------
 
 color_iter = itertools.cycle(['navy', 'red', 'cornflowerblue', 'gold', 'darkorange','b','cyan'])
+
+d =  3
+
+# dictionary of color codes for creating segmentation masks
 _color_codes = {
     1: (171,166, 27),
     2: (112, 26, 91,),
@@ -19,76 +37,101 @@ _color_codes = {
     6: (139, 69,   19),
     7: (56, 161,  48)
 }
-d = 3
 
 
-def create_data(image, n_samples):
-    num_pts, radius = 24, 8
-    img_src = cv2.GaussianBlur(image,(5,5),0)
+def plot_results(X, Y_, means, covariances, index, title):
+    splot = plt.subplot(2, 1, 1 + index)
+    for i, (mean, covar, color) in enumerate(zip(
+            means, covariances, color_iter)):
+        v, w = linalg.eigh(covar)
+        v = 2. * np.sqrt(2.) * np.sqrt(v)
+        u = w[0] / linalg.norm(w[0])
+        # as the DP will not use every component it has access to
+        # unless it needs it, we shouldn't plot the redundant
+        # components.
+        if not np.any(Y_ == i):
+            continue
 
-    # Projecting to CIELAB space 
-    imtest=cv2.cvtColor(img_src, cv2.COLOR_BGR2LAB) 
+        plt.scatter(X[Y_ == i, 0], X[Y_ == i, 1], 0.9, color=color)
 
-    # Captures local texture 
-    img_gray= cv2.cvtColor(img_src, cv2.COLOR_BGR2GRAY)
-    lbp = feature.local_binary_pattern(img_gray, num_pts, radius, method="uniform")
-    lbp = np.reshape(lbp,(n_samples,1))
+        # Plot an ellipse to show the Gaussian component
+        angle = np.arctan(u[1] / u[0])
+        angle = 180. * angle / np.pi  # convert to degrees
+        ell = mpl.patches.Ellipse(mean, v[0], v[1], 180. + angle, color=color)
+        ell.set_clip_box(splot.bbox)
+        ell.set_alpha(0.5)
+        splot.add_artist(ell)
 
-    imtest= np.reshape(imtest, (n_samples, d))
-    data=np.column_stack((imtest, lbp))
-
-    data = preprocessing.normalize(imtest, norm= 'l2')
-    return data, imtest
-
-
-
-def train(num_patches, image, n_samples, w, h):
-    for i in range(1, num_patches):
-        imtrain = shuffle(image)
-        imtrain = imtrain[:1000]
-
-    '''
-    Fit gaussian mixture model using 7 components repeatedly 
-    with small random samples from the data using Expectation Maximization.
-    '''
-    print("Fitting Gaussain Mixture Model with Expectation Maximization")
-
-    gmm = mixture.GaussianMixture(n_components=7, covariance_type='full', tol=0.001, reg_covar=1e-06, max_iter=1200, n_init=1, init_params='kmeans', warm_start=True).fit(imtrain)
-
-    # '''
-    # Fit Bayesian gaussian mixture model using 7 components repeatedly 
-    # with small random samples from the data using Dirichilet process.
-    # '''
-    # print("Fitting Bayesian Gaussian mixture with Dirichlet process")
-
-    # dpgmm = mixture.BayesianGaussianMixture(n_components=7, covariance_type='full', weight_concentration_prior_type='dirichlet_distribution', tol=0.001, reg_covar=1e-06, max_iter=1200, n_init=1, init_params='kmeans', warm_start=True).fit(imtrain)
-
-    return gmm
+    plt.title('Output')
 
 
+def test(imtest, gmm, dpgmm):
+    lab1=gmm.predict(imtest)
+    lab2=dpgmm.predict(imtest)
 
-def test(im_test, gmm):
-    labels = gmm.predict(im_test)
-    return labels
+    # plot_results(imtest, lab1, gmm.means_, gmm.covariances_, 0 ,'Gaussian Mixture')
+    # plot_results(imtest, lab2, dpgmm.means_, dpgmm.covariances_, 1 ,'Bayesian Gaussian Mixture with a Dirichlet process prior')
+    # plt.show()
+	
+    return lab1,lab2
 
+#---------Runs GMM Fit on Each Random Combination of 1000 Points, 'num_patches' number of times---------#
 
-def segment(image, samples, label, num_comp, w, h):
-    label = np.expand_dims(label, axis=0)
-    label = np.transpose(label)
-
-    for i in range(1, num_comp):
-        indices = np.where(np.all(label == i, axis=-1))
-        indices = np.unravel_index(indices, (w, h), order='C')
-        indices = np.transpose(indices)
-
-        l =  chain.from_iterable(zip(*indices))
-
-        for j, (lowercase, uppercase) in enumerate(l):
-            image[lowercase, uppercase] = _color_codes[(i)]
-
-    return image
+def train(num_patches, image,n_samples,w,h):
+	for i in range(1, num_patches): 
+		imtrain = shuffle(image)
+		imtrain=imtrain[:1000]
+		gmm = mixture.GaussianMixture(n_components=7, covariance_type='full',  tol=0.001, reg_covar=1e-06, max_iter=1200, n_init=1, init_params='kmeans',  warm_start=True).fit(imtrain)
+		dpgmm = mixture.BayesianGaussianMixture(n_components=7, covariance_type='full', weight_concentration_prior_type='dirichlet_distribution', tol=0.001, reg_covar=1e-06, max_iter=1200, n_init=1, init_params='kmeans', warm_start=True).fit(imtrain)
+		return gmm, dpgmm
 
 
-if __name__ == "__main__":
+def segmented(image,samples,label, num_comp, w, h):
+    #Add dimension to [n,] array
+	labels=np.expand_dims(label, axis=0)
+	labels=np.transpose(labels)
 
-    pass
+	for i in range(1,num_comp):
+
+		indices=np.where(np.all(labels==i, axis=-1))
+		indices = np.unravel_index(indices, (w,h), order='C')
+		type(indices)
+		indices=np.transpose(indices)
+
+		#indices=list(indices)
+		l = chain.from_iterable(zip(*indices))
+
+		for j, (lowercase, uppercase) in enumerate(l):
+        		# set the colour accordingly
+
+				image[lowercase,uppercase] = _color_codes[(i)]
+
+	return image
+
+def createData(image, n_samples):
+	#Intialisation for Local Binary Patterns Descriptor
+	numPoints = 24
+	#Number of samples per component
+	radius = 8
+	img_src = cv2.GaussianBlur(image,(5,5),0)
+
+	#blur = cv2.bilateralFilter(img_src,9,75,75)
+	#blurthresh=100
+	#imtest = fix(imtest, blurthresh)
+
+	imtest=cv2.cvtColor(img_src, cv2.COLOR_BGR2LAB)
+	img_gray= cv2.cvtColor(img_src, cv2.COLOR_BGR2GRAY)
+
+	lbp = feature.local_binary_pattern(img_gray, numPoints,
+		radius, method="uniform")
+
+	lbp=np.reshape(lbp,(n_samples,1))
+
+	imtest= np.reshape(imtest, (n_samples, d))
+	data=np.column_stack((imtest, lbp))
+
+	data= preprocessing.normalize(imtest, norm= 'l2')
+	#data= preprocessing.scale(data);
+
+	return data, imtest
+
