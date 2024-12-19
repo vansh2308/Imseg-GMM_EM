@@ -15,7 +15,7 @@ from utils import *
 
 if __name__ == "__main__":
     #LoadImage
-    img_src = cv2.imread('input/14.jpg')
+    img_src = cv2.imread('input/15.jpg')
     w, h, d = original_shape = tuple(img_src.shape)
     assert d == 3
 
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     seg2=segmented(img_src,samples, lab2,7, w, h)
 
     
-    img_src = mpimg.imread('input/14.jpg') 
+    img_src = mpimg.imread('input/15.jpg') 
 
 
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 10))
@@ -44,5 +44,5 @@ if __name__ == "__main__":
     axs[1].set_xticks([])
     axs[1].set_yticks([])
 
-    plt.imsave('output/14.png', seg1)
+    plt.imsave('output/15.png', seg1)
 

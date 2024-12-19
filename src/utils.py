@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import math
 from sklearn import mixture
+from gmm import GaussianMixture
 from scipy import linalg
 import itertools
 import matplotlib.pyplot as plt
@@ -81,7 +82,9 @@ def train(num_patches, image,n_samples,w,h):
 	for i in range(1, num_patches): 
 		imtrain = shuffle(image)
 		imtrain=imtrain[:1000]
-		gmm = mixture.GaussianMixture(n_components=7, covariance_type='full',  tol=0.001, reg_covar=1e-06, max_iter=1200, n_init=1, init_params='kmeans',  warm_start=True).fit(imtrain)
+		
+		gmm = GaussianMixture(n_components=7, covariance_type='full',  tol=0.001, reg_covar=1e-06, max_iter=1200, n_init=1, init_params='kmeans',  warm_start=True).fit(imtrain)
+		
 		dpgmm = mixture.BayesianGaussianMixture(n_components=7, covariance_type='full', weight_concentration_prior_type='dirichlet_distribution', tol=0.001, reg_covar=1e-06, max_iter=1200, n_init=1, init_params='kmeans', warm_start=True).fit(imtrain)
 		return gmm, dpgmm
 
